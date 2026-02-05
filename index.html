@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Buddy</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        /* Custom scrollbar for chat */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 h-screen overflow-hidden text-slate-900 font-sans">
+    <div id="root" class="h-full"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- ICONS (SVG Replacements for Lucide-React) ---
+        const IconBase = ({ size = 24, className = "", children }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {children}
+            </svg>
+        );
+
+        const Mic = (p) => <IconBase {...p}><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></IconBase>;
+        const Send = (p) => <IconBase {...p}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></IconBase>;
+        const Globe = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></IconBase>;
+        const ArrowLeft = (p) => <IconBase {...p}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></IconBase>;
+        const Sparkles = (p) => <IconBase {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 3v4"/><path d="M3 5h4"/><path d="M3 9h4"/></IconBase>;
+        const AlertCircle = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></IconBase>;
+        const Coffee = (p) => <IconBase {...p}><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></IconBase>;
+        const Shirt = (p) => <IconBase {...p}><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></IconBase>;
+        const Trophy = (p) => <IconBase {...p}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></IconBase>;
+        const Plane = (p) => <IconBase {...p}><path d="M2 12h20"/><path d="M13 2l3.6 7.2h-5.2z"/><path d="M15.4 14.8 19 22"/><path d="M13 14.8V22"/><path d="M10.6 14.8 7 22"/></IconBase>; // Simplified plane
+        const Camera = (p) => <IconBase {...p}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></IconBase>;
+        const Tv = (p) => <IconBase {...p}><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></IconBase>;
+        const Music = (p) => <IconBase {...p}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></IconBase>;
+        const MessageCircle = (p) => <IconBase {...p}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></IconBase>;
+
+
+        // --- CONFIGURATION ---
+
+        const TOPICS = [
+            { id: 'food', label: 'Food & Cooking', icon: Coffee, color: 'bg-orange-100 text-orange-600', prompt: "Let's talk about food! What is your favorite meal to cook or eat?" },
+            { id: 'fashion', label: 'Fashion & Style', icon: Shirt, color: 'bg-pink-100 text-pink-600', prompt: "Let's discuss fashion. Do you have a favorite piece of clothing or style?" },
+            { id: 'sports', label: 'Sports & Fitness', icon: Trophy, color: 'bg-emerald-100 text-emerald-600', prompt: "Sports time! Do you prefer playing sports or watching them?" },
+            { id: 'travel', label: 'Travel & Adventure', icon: Plane, color: 'bg-blue-100 text-blue-600', prompt: "Let's travel! If you could fly anywhere right now, where would you go?" },
+            { id: 'hobbies', label: 'Hobbies & Art', icon: Camera, color: 'bg-purple-100 text-purple-600', prompt: "Tell me about your hobbies. What do you do in your free time?" },
+            { id: 'entertainment', label: 'Movies & TV', icon: Tv, color: 'bg-red-100 text-red-600', prompt: "Let's talk entertainment. Have you seen any good movies lately?" },
+            { id: 'music', label: 'Music & Concerts', icon: Music, color: 'bg-teal-100 text-teal-600', prompt: "Music moves us. What kind of music makes you want to dance?" },
+            { id: 'daily', label: 'Daily Life', icon: MessageCircle, color: 'bg-indigo-100 text-indigo-600', prompt: "Let's chat about daily life. What does a typical morning look like for you?" },
+        ];
+
+        const SYSTEM_PROMPT = (topic) => `
+        You are "English Buddy", a warm, encouraging English tutor for Spanish speakers. 
+        Your goal is to build their confidence.
+        Current Topic: ${topic}
+
+        Rules for interaction:
+        1. RESPONSE STYLE: Keep responses short (1-3 sentences max) and conversational.
+        2. IF USER SPEAKS SPANISH: 
+        - Acknowledge what they said.
+        - Translate it to English: "In English, we say: '...'"
+        - Then answer the content of their message in English.
+        3. IF USER SPEAKS ENGLISH WITH ERRORS:
+        - Understand their meaning first (praise the attempt!).
+        - Gently rephrase it correctly: "That's great! A natural way to say that is..."
+        - Continue the conversation.
+        4. IF USER SPEAKS ENGLISH WELL:
+        - Respond naturally like a friend.
+        5. ALWAYS end with a simple, open-ended question to keep them talking.
+        6. Tone: Friendly, patient, never judgmental.
+        `;
+
+        // --- COMPONENTS ---
+
+        const TopicCard = ({ topic, onSelect }) => (
+            <button 
+                onClick={() => onSelect(topic)}
+                className={`flex flex-col items-center justify-center p-6 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 border border-slate-100 hover:-translate-y-1 bg-white group`}
+            >
+                <div className={`p-4 rounded-full mb-4 ${topic.color} bg-opacity-20 group-hover:bg-opacity-30 transition-colors`}>
+                <topic.icon size={32} strokeWidth={1.5} />
+                </div>
+                <span className="font-semibold text-slate-700 text-lg">{topic.label}</span>
+            </button>
+        );
+
+        const ChatBubble = ({ message }) => {
+            const isUser = message.sender === 'user';
+            const isError = message.isError;
+
+            return (
+                <div className={`flex w-full mb-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
+                <div 
+                    className={`max-w-[85%] sm:max-w-[75%] p-4 rounded-2xl shadow-sm text-base leading-relaxed
+                    ${isUser 
+                        ? 'bg-blue-600 text-white rounded-br-none' 
+                        : isError 
+                        ? 'bg-red-50 border border-red-200 text-red-800 rounded-bl-none'
+                        : 'bg-white border border-slate-100 text-slate-800 rounded-bl-none'
+                    }`}
+                >
+                    {message.contextLabel && !isError && (
+                    <p className={`text-xs font-bold mb-1 opacity-70 uppercase tracking-wider`}>
+                        {message.contextLabel}
+                    </p>
+                    )}
+                    
+                    {isError && (
+                    <div className="flex items-center gap-2 mb-2 text-red-600 font-bold text-sm uppercase tracking-wide">
+                        <AlertCircle size={16} />
+                        <span>Connection Error</span>
+                    </div>
+                    )}
+                    
+                    <p className="whitespace-pre-wrap">{message.text}</p>
+                    
+                    {message.correction && (
+                    <div className="mt-3 pt-3 border-t border-slate-200/20">
+                        <div className="flex items-start gap-2">
+                        <Sparkles size={16} className={isUser ? "text-yellow-300" : "text-amber-500"} />
+                        <p className="text-sm italic opacity-90">{message.correction}</p>
+                        </div>
+                    </div>
+                    )}
+                </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APP ---
+
+        function App() {
+            const [apiKey, setApiKey] = useState('');
+            const [hasKey, setHasKey] = useState(false);
+            const [view, setView] = useState('welcome');
+            const [currentTopic, setCurrentTopic] = useState(null);
+            const [messages, setMessages] = useState([]);
+            const [inputText, setInputText] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+            const [isListening, setIsListening] = useState(false);
+            const [listeningLang, setListeningLang] = useState('en-US');
+            const [statusMessage, setStatusMessage] = useState('');
+
+            const chatEndRef = useRef(null);
+            const recognitionRef = useRef(null);
+            const handleSendMessageRef = useRef(null);
+
+            useEffect(() => {
+                chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [messages]);
+
+            useEffect(() => {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                
+                recognitionRef.current = new SpeechRecognition();
+                recognitionRef.current.continuous = false;
+                recognitionRef.current.interimResults = false;
+
+                recognitionRef.current.onstart = () => {
+                    setIsListening(true);
+                    setStatusMessage("Listening...");
+                };
+
+                recognitionRef.current.onresult = (event) => {
+                    if (event.results && event.results[0]) {
+                        const transcript = event.results[0][0].transcript;
+                        setInputText(transcript);
+                        setStatusMessage("Processing...");
+                        const isSpanish = recognitionRef.current.lang === 'es-MX';
+                        
+                        if (handleSendMessageRef.current) {
+                            handleSendMessageRef.current(transcript, isSpanish);
+                        }
+                    }
+                };
+
+                recognitionRef.current.onend = () => {
+                    setIsListening(false);
+                };
+
+                recognitionRef.current.onerror = (event) => {
+                    if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                        console.error("Speech recognition error", event.error);
+                    }
+                    
+                    setIsListening(false);
+                    
+                    if (event.error === 'no-speech') {
+                        setStatusMessage("No speech detected. Click to try again.");
+                    } else if (event.error === 'not-allowed') {
+                        setStatusMessage("Microphone access denied. Please allow permissions.");
+                    } else if (event.error === 'aborted') {
+                        setStatusMessage(""); 
+                    } else {
+                        setStatusMessage(`Microphone Error: ${event.error}`);
+                    }
+
+                    setTimeout(() => {
+                        setStatusMessage((prev) => prev.includes('Error') || prev.includes('No speech') || prev.includes('Microphone') ? '' : prev);
+                    }, 3000);
+                };
+                }
+
+                return () => {
+                    if (recognitionRef.current) {
+                        recognitionRef.current.abort();
+                    }
+                };
+            }, []); 
+
+            const startListening = (lang) => {
+                if (!recognitionRef.current) {
+                    alert("Your browser doesn't support speech recognition. Try Chrome or Edge.");
+                    return;
+                }
+
+                if (isListening) {
+                    recognitionRef.current.stop();
+                    return; 
+                }
+
+                setListeningLang(lang);
+                recognitionRef.current.lang = lang;
+                
+                try {
+                    recognitionRef.current.start();
+                } catch (err) {
+                    console.log("Recognition restart required, resetting...");
+                    recognitionRef.current.stop();
+                }
+            };
+
+            const detectLanguage = (text) => {
+                const spanishWords = new Set(['el', 'la', 'los', 'las', 'un', 'una', 'y', 'o', 'pero', 'si', 'no', 'es', 'está', 'son', 'yo', 'tu', 'usted', 'que', 'qué', 'en', 'por', 'para', 'con', 'sin', 'hola', 'gracias', 'adios', 'buenos', 'buenas', 'gusta', 'quiero', 'tengo', 'entiendo', 'muy', 'bien']);
+                const englishWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'if', 'not', 'is', 'are', 'am', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'that', 'what', 'in', 'on', 'at', 'for', 'with', 'hello', 'hi', 'thanks', 'good', 'like', 'want', 'have', 'understand', 'very', 'well']);
+
+                const words = text.toLowerCase().replace(/[.,?!]/g, '').split(/\s+/);
+                let esCount = 0;
+                let enCount = 0;
+
+                words.forEach(word => {
+                if (spanishWords.has(word)) esCount++;
+                if (englishWords.has(word)) enCount++;
+                });
+
+                return (esCount > enCount) ? 'es-MX' : 'en-US';
+            };
+
+            const speakText = (text) => {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel(); 
+
+                    const voices = window.speechSynthesis.getVoices();
+                    const enVoice = voices.find(v => v.lang.includes('en-US') && v.name.includes('Google')) || voices.find(v => v.lang.includes('en-US')) || voices.find(v => v.lang.includes('en'));
+                    const esVoice = voices.find(v => v.lang.includes('es-MX') && v.name.includes('Google')) || voices.find(v => v.lang.includes('es-ES') && v.name.includes('Google')) || voices.find(v => v.lang.includes('es'));
+
+                    const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
+
+                    sentences.forEach(sentence => {
+                        const lang = detectLanguage(sentence);
+                        const utterance = new SpeechSynthesisUtterance(sentence);
+                        
+                        utterance.lang = lang;
+                        utterance.rate = 0.9; 
+                        
+                        if (lang === 'es-MX' && esVoice) {
+                            utterance.voice = esVoice;
+                        } else if (enVoice) {
+                            utterance.voice = enVoice;
+                        }
+
+                        window.speechSynthesis.speak(utterance);
+                    });
+                }
+            };
+
+            const fetchWithRetry = async (url, options) => {
+                const delays = [1000, 2000, 4000, 8000, 16000];
+                
+                for (let i = 0; i < delays.length; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok || (response.status !== 503 && response.status !== 429)) {
+                    return response;
+                    }
+                    if (i === delays.length - 1) return response;
+                    await new Promise(resolve => setTimeout(resolve, delays[i]));
+                } catch (error) {
+                    if (i === delays.length - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, delays[i]));
+                }
+                }
+            };
+
+            const handleSendMessage = async (text, wasSpanish = false) => {
+                if (!text.trim()) return;
+
+                if (!currentTopic) return;
+                const safeKey = apiKey.trim();
+
+                const userMsg = {
+                id: Date.now(),
+                sender: 'user',
+                text: text,
+                contextLabel: wasSpanish ? 'You spoke Spanish' : 'You said',
+                };
+
+                setMessages(prev => [...prev, userMsg]);
+                setInputText('');
+                setIsLoading(true);
+                setStatusMessage(""); 
+
+                try {
+                const response = await fetchWithRetry(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${safeKey}`, 
+                    {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                        parts: [{
+                            text: `
+                            Previous conversation history: ${messages.map(m => `${m.sender}: ${m.text}`).join('\n')}
+                            User just said: "${text}"
+                            (Note: User might have spoken in ${wasSpanish ? 'Spanish' : 'English'})
+                            `
+                        }]
+                        }],
+                        systemInstruction: {
+                        parts: [{ text: SYSTEM_PROMPT(currentTopic.label) }]
+                        }
+                    })
+                    }
+                );
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error?.message || `API Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I didn't catch that. Could you say it again?";
+                
+                const aiMsg = {
+                    id: Date.now() + 1,
+                    sender: 'ai',
+                    text: aiText,
+                };
+
+                setMessages(prev => [...prev, aiMsg]);
+                speakText(aiText);
+
+                } catch (error) {
+                console.error("Gemini API Error:", error);
+                
+                let errorDisplay = "I'm having trouble connecting.";
+                const errString = error.toString().toLowerCase();
+
+                if (errString.includes('400') || errString.includes('key')) {
+                    errorDisplay = "Error: Invalid API Key. Please check your key.";
+                } else if (errString.includes('429') || errString.includes('quota') || errString.includes('overloaded') || errString.includes('503')) {
+                    errorDisplay = "System busy. Please try saying that again in a moment.";
+                } else if (errString.includes('fetch') || errString.includes('network')) {
+                    errorDisplay = "Error: Network connection failed. Check your internet.";
+                } else {
+                    errorDisplay = `System Error: ${error.message}`;
+                }
+
+                setMessages(prev => [...prev, { 
+                    id: Date.now(), 
+                    sender: 'ai', 
+                    text: errorDisplay,
+                    isError: true
+                }]);
+                } finally {
+                setIsLoading(false);
+                }
+            };
+
+            handleSendMessageRef.current = handleSendMessage;
+
+            // --- VIEWS ---
+
+            const WelcomeView = () => (
+                <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6 animate-fade-in">
+                <div className="bg-blue-100 p-6 rounded-full mb-6">
+                    <Globe size={64} className="text-blue-600" />
+                </div>
+                <h1 className="text-4xl font-bold text-slate-800 mb-4 tracking-tight">English Buddy</h1>
+                <p className="text-lg text-slate-600 max-w-md mb-8">
+                    Your supportive companion for learning English. Talk freely, take risks, and improve your conversation skills.
+                </p>
+                
+                <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 w-full max-w-md">
+                    <label className="block text-sm font-semibold text-slate-700 mb-2 text-left">
+                    Enter Google Gemini API Key
+                    </label>
+                    <input 
+                    type="password" 
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="Paste key here..."
+                    className="w-full p-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    />
+                    <button 
+                    onClick={() => {
+                        if(apiKey.length > 10) {
+                        setHasKey(true);
+                        setView('topics');
+                        } else {
+                        alert("Please enter a valid API key.");
+                        }
+                    }}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-blue-200 shadow-lg"
+                    >
+                    Start Learning
+                    </button>
+                    <p className="text-xs text-slate-400 mt-4">
+                    Need a key? Get one for free at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">Google AI Studio</a>.
+                    </p>
+                </div>
+                </div>
+            );
+
+            const TopicsView = () => (
+                <div className="p-4 sm:p-8 max-w-5xl mx-auto animate-fade-in h-full overflow-y-auto">
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                    <h2 className="text-3xl font-bold text-slate-800">Choose a Topic</h2>
+                    <p className="text-slate-500">What would you like to talk about today?</p>
+                    </div>
+                    <button onClick={() => { setHasKey(false); setView('welcome'); }} className="text-slate-400 hover:text-slate-600 text-sm">
+                    Change Key
+                    </button>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pb-12">
+                    {TOPICS.map((topic) => (
+                    <TopicCard 
+                        key={topic.id} 
+                        topic={topic} 
+                        onSelect={(t) => {
+                        setCurrentTopic(t);
+                        setMessages([{
+                            id: 'init', 
+                            sender: 'ai', 
+                            text: `Hi! ${t.prompt}`
+                        }]);
+                        speakText(`Hi! ${t.prompt}`);
+                        setView('chat');
+                        }} 
+                    />
+                    ))}
+                </div>
+                </div>
+            );
+
+            const ChatView = () => (
+                <div className="flex flex-col h-screen max-h-screen bg-slate-50">
+                <div className="bg-white border-b border-slate-200 p-4 flex items-center justify-between shadow-sm z-10">
+                    <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => {
+                        window.speechSynthesis.cancel();
+                        setView('topics');
+                        setStatusMessage("");
+                        }}
+                        className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"
+                    >
+                        <ArrowLeft size={24} />
+                    </button>
+                    <div className="flex items-center gap-2">
+                        <div className={`p-2 rounded-full ${currentTopic.color} bg-opacity-20`}>
+                        <currentTopic.icon size={20} />
+                        </div>
+                        <div>
+                        <h3 className="font-bold text-slate-800 leading-tight">{currentTopic.label}</h3>
+                        <p className="text-xs text-slate-500">English Buddy is listening</p>
+                        </div>
+                    </div>
+                    </div>
+                    <div className="flex gap-2">
+                    <div className={`h-3 w-3 rounded-full ${isLoading ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`}></div>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                    {messages.map((msg) => (
+                    <ChatBubble key={msg.id} message={msg} />
+                    ))}
+                    {isLoading && (
+                    <div className="flex justify-start w-full">
+                        <div className="bg-white p-4 rounded-2xl rounded-bl-none shadow-sm border border-slate-100 flex gap-2 items-center">
+                        <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
+                        <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                        <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                        </div>
+                    </div>
+                    )}
+                    <div ref={chatEndRef} />
+                </div>
+
+                <div className="bg-white border-t border-slate-200 p-4 pb-6">
+                    <div className="max-w-3xl mx-auto space-y-4">
+                    
+                    <div className="h-6 flex items-center justify-center">
+                        {statusMessage && (
+                        <p className={`text-xs font-semibold ${statusMessage.includes('Error') || statusMessage.includes('No speech') ? 'text-red-500' : 'text-blue-600 animate-pulse'}`}>
+                            {statusMessage}
+                        </p>
+                        )}
+                    </div>
+
+                    <div className="flex gap-2 justify-center mb-2">
+                        <button
+                        onClick={() => startListening('en-US')}
+                        disabled={isListening || isLoading}
+                        className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all
+                            ${isListening && listeningLang === 'en-US' 
+                            ? 'border-red-500 bg-red-50 text-red-600 animate-pulse' 
+                            : 'border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-200'
+                            }
+                        `}
+                        >
+                        <Mic size={24} className="mb-1" />
+                        <span className="text-xs font-bold">Speak English</span>
+                        </button>
+
+                        <button
+                        onClick={() => startListening('es-MX')}
+                        disabled={isListening || isLoading}
+                        className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all
+                            ${isListening && listeningLang === 'es-MX'
+                            ? 'border-red-500 bg-red-50 text-red-600 animate-pulse' 
+                            : 'border-orange-100 bg-orange-50 text-orange-700 hover:bg-orange-100 hover:border-orange-200'
+                            }
+                        `}
+                        >
+                        <Globe size={24} className="mb-1" />
+                        <span className="text-xs font-bold">Ayuda en Español</span>
+                        </button>
+                    </div>
+
+                    <form 
+                        onSubmit={(e) => { e.preventDefault(); handleSendMessage(inputText); }}
+                        className="flex gap-2"
+                    >
+                        <input
+                        type="text"
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        placeholder="Or type your message here..."
+                        className="flex-1 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                        disabled={isLoading}
+                        />
+                        <button 
+                        type="submit"
+                        disabled={!inputText.trim() || isLoading}
+                        className="bg-slate-800 text-white p-3 rounded-xl hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                        >
+                        <Send size={20} />
+                        </button>
+                    </form>
+                    
+                    <p className="text-center text-xs text-slate-400">
+                        Click "Ayuda en Español" if you get stuck and need to speak Spanish.
+                    </p>
+                    </div>
+                </div>
+                </div>
+            );
+
+            return (
+                <div className="font-sans text-slate-900 bg-slate-50 min-h-screen">
+                {view === 'welcome' && <WelcomeView />}
+                {view === 'topics' && <TopicsView />}
+                {view === 'chat' && <ChatView />}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
