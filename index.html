@@ -255,10 +255,30 @@
             };
 
             const detectLanguage = (text) => {
-                const spanishWords = new Set(['el', 'la', 'los', 'las', 'un', 'una', 'y', 'o', 'pero', 'si', 'no', 'es', 'está', 'son', 'yo', 'tu', 'usted', 'que', 'qué', 'en', 'por', 'para', 'con', 'sin', 'hola', 'gracias', 'adios', 'buenos', 'buenas', 'gusta', 'quiero', 'tengo', 'entiendo', 'muy', 'bien']);
-                const englishWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'if', 'not', 'is', 'are', 'am', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'that', 'what', 'in', 'on', 'at', 'for', 'with', 'hello', 'hi', 'thanks', 'good', 'like', 'want', 'have', 'understand', 'very', 'well']);
+                // Expanded High-Frequency Word Lists to prevent mixed-gender voice flipping
+                const spanishWords = new Set([
+                    'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'y', 'o', 'pero', 'si', 'sí', 'no', 'ni', 
+                    'que', 'qué', 'quien', 'quién', 'cuando', 'cuándo', 'donde', 'dónde', 'como', 'cómo', 
+                    'por', 'para', 'con', 'sin', 'de', 'del', 'al', 'a', 'en', 'su', 'sus', 'mi', 'mis', 'tu', 'tus', 
+                    'yo', 'tú', 'él', 'ella', 'usted', 'nosotros', 'nosotras', 'ellos', 'ellas', 'ustedes', 
+                    'es', 'son', 'somos', 'soy', 'estoy', 'estás', 'está', 'estamos', 'están', 'fue', 'era', 
+                    'tiene', 'tengo', 'tienes', 'tienen', 'hacer', 'decir', 'dicho', 'preguntar', 'pregunta', 'respuesta',
+                    'favor', 'gracias', 'hola', 'adiós', 'bueno', 'buena', 'bien', 'mal', 'gusta', 'quiero', 'entiendo'
+                ]);
+                
+                const englishWords = new Set([
+                    'the', 'a', 'an', 'and', 'or', 'but', 'if', 'not', 'no', 'yes', 
+                    'is', 'are', 'am', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'did', 'does', 
+                    'will', 'would', 'could', 'should', 'can', 'may', 'might',
+                    'i', 'you', 'he', 'she', 'it', 'we', 'they', 'my', 'your', 'his', 'her', 'their', 'our', 
+                    'that', 'this', 'these', 'those', 'what', 'where', 'when', 'who', 'why', 'how', 
+                    'in', 'on', 'at', 'to', 'from', 'by', 'with', 'about', 'for', 'of', 
+                    'say', 'said', 'tell', 'told', 'ask', 'asked', 'question', 'answer', 'speak', 'talk',
+                    'please', 'thank', 'thanks', 'hello', 'hi', 'good', 'bad', 'great', 'sorry', 'excuse', 'me',
+                    'understand', 'well', 'very', 'like', 'want'
+                ]);
 
-                const words = text.toLowerCase().replace(/[.,?!]/g, '').split(/\s+/);
+                const words = text.toLowerCase().replace(/[.,?!:;"'(){}\[\]]/g, '').split(/\s+/);
                 let esCount = 0;
                 let enCount = 0;
 
@@ -267,6 +287,7 @@
                 if (englishWords.has(word)) enCount++;
                 });
 
+                // Default to English unless Spanish signal is strictly higher
                 return (esCount > enCount) ? 'es-MX' : 'en-US';
             };
 
@@ -274,11 +295,16 @@
                 if ('speechSynthesis' in window) {
                     window.speechSynthesis.cancel(); 
 
+                    // 1. STRIP MARKDOWN (Fixes "Asterisk" pronunciation)
+                    // Removes *, #, _, - characters used for formatting
+                    const cleanText = text.replace(/[*#_`~]/g, '');
+
                     const voices = window.speechSynthesis.getVoices();
                     const enVoice = voices.find(v => v.lang.includes('en-US') && v.name.includes('Google')) || voices.find(v => v.lang.includes('en-US')) || voices.find(v => v.lang.includes('en'));
                     const esVoice = voices.find(v => v.lang.includes('es-MX') && v.name.includes('Google')) || voices.find(v => v.lang.includes('es-ES') && v.name.includes('Google')) || voices.find(v => v.lang.includes('es'));
 
-                    const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
+                    // Split text by sentence terminators
+                    const sentences = cleanText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleanText];
 
                     sentences.forEach(sentence => {
                         const lang = detectLanguage(sentence);
