@@ -47,7 +47,7 @@
         const Send = (p) => <IconBase {...p}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></IconBase>;
         const Globe = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></IconBase>;
         const ArrowLeft = (p) => <IconBase {...p}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></IconBase>;
-        const Sparkles = (p) => <IconBase {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 3v4"/><path d="M3 5h4"/><path d="M3 9h4"/></IconBase>;
+        const Sparkles = (p) => <IconBase {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 3v4"/><path d="M3 5h4"/><path d="M3 9h4"/></IconBase>;
         const AlertCircle = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></IconBase>;
         const Coffee = (p) => <IconBase {...p}><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></IconBase>;
         const Shirt = (p) => <IconBase {...p}><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></IconBase>;
@@ -271,7 +271,10 @@
             };
 
             const detectLanguage = (text) => {
-                // Expanded High-Frequency Word Lists to prevent mixed-gender voice flipping
+                // FORCE SPANISH if standard Spanish opening/question marks are present
+                if (text.includes('¿') || text.includes('¡')) return 'es-MX';
+
+                // Expanded High-Frequency Word Lists
                 const spanishWords = new Set([
                     'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'y', 'o', 'pero', 'si', 'sí', 'no', 'ni', 
                     'que', 'qué', 'quien', 'quién', 'cuando', 'cuándo', 'donde', 'dónde', 'como', 'cómo', 
@@ -279,7 +282,8 @@
                     'yo', 'tú', 'él', 'ella', 'usted', 'nosotros', 'nosotras', 'ellos', 'ellas', 'ustedes', 
                     'es', 'son', 'somos', 'soy', 'estoy', 'estás', 'está', 'estamos', 'están', 'fue', 'era', 
                     'tiene', 'tengo', 'tienes', 'tienen', 'hacer', 'decir', 'dicho', 'preguntar', 'pregunta', 'respuesta',
-                    'favor', 'gracias', 'hola', 'adiós', 'bueno', 'buena', 'bien', 'mal', 'gusta', 'quiero', 'entiendo'
+                    'favor', 'gracias', 'hola', 'adiós', 'bueno', 'buena', 'bien', 'mal', 'gusta', 'quiero', 'entiendo',
+                    'necesitas', 'sentirte', 'energía', 'escuchas', 'cuál'
                 ]);
                 
                 const englishWords = new Set([
@@ -303,7 +307,6 @@
                 if (englishWords.has(word)) enCount++;
                 });
 
-                // Default to English unless Spanish signal is strictly higher
                 return (esCount > enCount) ? 'es-MX' : 'en-US';
             };
 
@@ -311,8 +314,12 @@
                 if ('speechSynthesis' in window) {
                     window.speechSynthesis.cancel(); 
 
-                    // 1. STRIP MARKDOWN (Fixes "Asterisk" pronunciation)
-                    const cleanText = text.replace(/[*#_`~]/g, '');
+                    // 1. STRIP MARKDOWN AND EMOJIS (Fixes "Headphone" and "Asterisk" pronunciation)
+                    const cleanText = text
+                        .replace(/[*#_`~]/g, '') // Remove Markdown
+                        .replace(/[\u{1F300}-\u{1F9FF}]/gu, '') // Remove Emoji range 1
+                        .replace(/[\u{2600}-\u{26FF}]/gu, '') // Remove Emoji range 2 (inc. headphones)
+                        .replace(/[\u{2700}-\u{27BF}]/gu, ''); // Remove Dingbats
 
                     const voices = window.speechSynthesis.getVoices();
                     const enVoice = voices.find(v => v.lang.includes('en-US') && v.name.includes('Google')) || voices.find(v => v.lang.includes('en-US')) || voices.find(v => v.lang.includes('en'));
