@@ -57,40 +57,45 @@
         const Tv = (p) => <IconBase {...p}><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></IconBase>;
         const Music = (p) => <IconBase {...p}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></IconBase>;
         const MessageCircle = (p) => <IconBase {...p}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></IconBase>;
-
+        const Gamepad = (p) => <IconBase {...p}><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></IconBase>;
 
         // --- CONFIGURATION ---
 
         const TOPICS = [
-            { id: 'food', label: 'Food & Cooking', icon: Coffee, color: 'bg-orange-100 text-orange-600', prompt: "Let's talk about food! What is your favorite meal to cook or eat?" },
-            { id: 'fashion', label: 'Fashion & Style', icon: Shirt, color: 'bg-pink-100 text-pink-600', prompt: "Let's discuss fashion. Do you have a favorite piece of clothing or style?" },
-            { id: 'sports', label: 'Sports & Fitness', icon: Trophy, color: 'bg-emerald-100 text-emerald-600', prompt: "Sports time! Do you prefer playing sports or watching them?" },
-            { id: 'travel', label: 'Travel & Adventure', icon: Plane, color: 'bg-blue-100 text-blue-600', prompt: "Let's travel! If you could fly anywhere right now, where would you go?" },
-            { id: 'hobbies', label: 'Hobbies & Art', icon: Camera, color: 'bg-purple-100 text-purple-600', prompt: "Tell me about your hobbies. What do you do in your free time?" },
-            { id: 'entertainment', label: 'Movies & TV', icon: Tv, color: 'bg-red-100 text-red-600', prompt: "Let's talk entertainment. Have you seen any good movies lately?" },
-            { id: 'music', label: 'Music & Concerts', icon: Music, color: 'bg-teal-100 text-teal-600', prompt: "Music moves us. What kind of music makes you want to dance?" },
-            { id: 'daily', label: 'Daily Life', icon: MessageCircle, color: 'bg-indigo-100 text-indigo-600', prompt: "Let's chat about daily life. What does a typical morning look like for you?" },
+            { id: 'entertainment', label: 'Netflix & Anime', icon: Tv, color: 'bg-red-100 text-red-600', prompt: "Let's talk shows! Are you watching any good anime or series right now?" },
+            { id: 'sports', label: 'Sports & Gaming', icon: Gamepad, color: 'bg-emerald-100 text-emerald-600', prompt: "Gaming or Sports? Which do you prefer playing or watching?" },
+            { id: 'music', label: 'Music & Vibes', icon: Music, color: 'bg-teal-100 text-teal-600', prompt: "What's on your playlist? Who is your favorite artist right now?" },
+            { id: 'food', label: 'Snacks & Food', icon: Coffee, color: 'bg-orange-100 text-orange-600', prompt: "If you could eat any snack right now, what would it be? Takis? Pizza?" },
+            { id: 'fashion', label: 'Style & Trends', icon: Shirt, color: 'bg-pink-100 text-pink-600', prompt: "Let's talk style. Do you like sneakers, hoodies, or something else?" },
+            { id: 'travel', label: 'Dream Trips', icon: Plane, color: 'bg-blue-100 text-blue-600', prompt: "If you could fly anywhere with your friends tomorrow, where would you go?" },
+            { id: 'hobbies', label: 'Hobbies', icon: Camera, color: 'bg-purple-100 text-purple-600', prompt: "What do you do when you're not at school? Do you draw, play, or hang out?" },
+            { id: 'daily', label: 'School & Friends', icon: MessageCircle, color: 'bg-indigo-100 text-indigo-600', prompt: "How is school going? What's the best (or worst) part of your week?" },
         ];
 
+        // UPDATED SYSTEM PROMPT FOR TEENS/MS/HS
         const SYSTEM_PROMPT = (topic) => `
-        You are "English Buddy", a warm, encouraging English tutor for Spanish speakers. 
-        Your goal is to build their confidence.
+        You are "English Buddy", a cool, supportive English mentor for middle and high school students who speak Spanish.
+        Your goal is to be engaging, relevant, and build confidence. You are NOT a strict teacher. You are a conversation partner.
+        
         Current Topic: ${topic}
 
         Rules for interaction:
-        1. RESPONSE STYLE: Keep responses short (1-3 sentences max) and conversational.
+        1. RESPONSE STYLE: Keep responses short (1-3 sentences max) and conversational. Use natural language suitable for teens (avoiding overly formal textbook English).
         2. IF USER SPEAKS SPANISH: 
-        - Acknowledge what they said.
-        - Translate it to English: "In English, we say: '...'"
-        - Then answer the content of their message in English.
+           - Acknowledge what they said.
+           - Translate it to English naturally: "Oh, you mean..." or "In English, we say..."
+           - Then respond to the content in English.
         3. IF USER SPEAKS ENGLISH WITH ERRORS:
-        - Understand their meaning first (praise the attempt!).
-        - Gently rephrase it correctly: "That's great! A natural way to say that is..."
-        - Continue the conversation.
+           - Validate the meaning first ("I get what you mean!").
+           - Gently rephrase it correctly without sounding like a grammar test ("A cool way to say that is...").
+           - Continue the conversation.
         4. IF USER SPEAKS ENGLISH WELL:
-        - Respond naturally like a friend.
-        5. ALWAYS end with a simple, open-ended question to keep them talking.
-        6. Tone: Friendly, patient, never judgmental.
+           - Respond naturally like a friend/mentor.
+        5. ENGAGEMENT: 
+           - Ask about their *opinions* and *preferences*. 
+           - Use simple, high-frequency vocabulary (CEFR A2/B1 level).
+           - Be encouraging about risk-taking. 
+        6. TONE: Friendly, upbeat, patient.
         `;
 
         // --- COMPONENTS ---
@@ -167,6 +172,17 @@
             const chatEndRef = useRef(null);
             const recognitionRef = useRef(null);
             const handleSendMessageRef = useRef(null);
+
+            // CHECK URL FOR MAGIC KEY
+            useEffect(() => {
+                const searchParams = new URLSearchParams(window.location.search);
+                const magicKey = searchParams.get('key');
+                if (magicKey) {
+                    setApiKey(magicKey);
+                    setHasKey(true);
+                    setView('topics');
+                }
+            }, []);
 
             useEffect(() => {
                 chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -296,7 +312,6 @@
                     window.speechSynthesis.cancel(); 
 
                     // 1. STRIP MARKDOWN (Fixes "Asterisk" pronunciation)
-                    // Removes *, #, _, - characters used for formatting
                     const cleanText = text.replace(/[*#_`~]/g, '');
 
                     const voices = window.speechSynthesis.getVoices();
