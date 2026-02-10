@@ -102,7 +102,7 @@
         - If they struggle, keep it very simple and encouraging.
         `;
 
-        // --- SUB-COMPONENTS (Moved outside App to prevent focus loss bug) ---
+        // --- SUB-COMPONENTS ---
 
         const TopicCard = ({ topic, onSelect }) => (
             <button 
@@ -593,8 +593,9 @@
                 }
 
                 try {
+                    // UPDATED: Use gemini-1.5-flash-002 specifically to avoid version mismatch errors
                     const response = await fetchWithRetry(
-                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${safeKey}`, 
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-002:generateContent?key=${safeKey}`, 
                         {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
