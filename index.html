@@ -593,13 +593,11 @@
                 }
 
                 try {
-                    // SWITCHED TO STABLE V1 ENDPOINT AND STANDARD 1.5 FLASH MODEL
-                    // AND INJECTED SYSTEM PROMPT INTO USER MESSAGE FOR COMPATIBILITY
-                    
+                    // CRITICAL FIX: Use v1beta AND gemini-1.5-flash AND embed system prompt in text
                     const systemContext = `SYSTEM INSTRUCTIONS:\n${SYSTEM_PROMPT(currentTopic.label)}`;
                     
                     const response = await fetchWithRetry(
-                        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${safeKey}`, 
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${safeKey}`, 
                         {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -609,7 +607,7 @@
                                         text: `${systemContext}\n\nPrevious conversation history: ${messages.map(m => `${m.sender}: ${m.text}`).join('\n')}\nUser just said: "${text}"\n(Note: User might have spoken in ${wasSpanish ? 'Spanish' : 'English'})${promptAddendum}`
                                     }]
                                 }]
-                                // systemInstruction removed for v1 compatibility
+                                // systemInstruction intentionally removed to ensure compatibility
                             })
                         }
                     );
