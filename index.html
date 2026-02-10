@@ -78,10 +78,9 @@
 
         const SYSTEM_PROMPT = (topic) => `
         You are "English Buddy", a cool, supportive English mentor for middle and high school students who speak Spanish.
-        Your goal is to be engaging, relevant, and build confidence. You are NOT a strict teacher. You are a conversation partner.
         Current Topic: ${topic}
         CRITICAL RULES:
-        1. ONE QUESTION ONLY: You must ask exactly ONE question per response. Never stack questions (e.g., "How are you? What did you do?"). Wait for the user to answer.
+        1. ONE QUESTION ONLY: You must ask exactly ONE question per response. Never stack questions. Wait for the user to answer.
         2. LEVEL ADAPTATION: 
            - If the user uses mostly Spanish, one-word English answers, or seems confused: Drop to LEVEL A1 (Beginner). Use very short sentences. Use simple words. Translate key questions to Spanish in parenthesis if they seem stuck.
            - If the user uses full English sentences: Adapt to LEVEL B1/B2.
@@ -89,11 +88,11 @@
         1. RESPONSE STYLE: Keep responses short (1-3 sentences max).
         2. IF USER SPEAKS SPANISH: 
            - Acknowledge what they said.
-           - Translate it to English naturally: "Oh, you mean..." or "In English, we say..."
+           - Translate it to English naturally.
            - Then respond to the content in English.
         3. IF USER SPEAKS ENGLISH WITH ERRORS:
            - Validate the meaning first ("I get what you mean!").
-           - Gently rephrase it correctly without sounding like a grammar test ("A cool way to say that is...").
+           - Gently rephrase it correctly without sounding like a grammar test.
            - Continue the conversation.
         4. TONE: Friendly, upbeat, patient.
         SPECIAL INSTRUCTION FOR "Level Check":
@@ -580,10 +579,10 @@
                 try {
                     const systemContext = `SYSTEM INSTRUCTIONS:\n${SYSTEM_PROMPT(currentTopic.label)}`;
                     
-                    // STANDARD FETCH: gemini-1.5-flash on v1beta.
-                    // This is the correct standard endpoint.
+                    // REVERTING TO LEGACY GEMINI-PRO ON V1BETA 
+                    // This uses the most universally available model configuration
                     const response = await fetch(
-                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${safeKey}`, 
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${safeKey}`, 
                         {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -628,7 +627,7 @@
                     } else if (errString.includes('quota') || errString.includes('429')) {
                         errorDisplay = "Busy: Too many requests. Please wait a moment.";
                     } else if (errString.includes('not found')) {
-                        errorDisplay = "Config Error: Model not found. Ensure the 'Generative Language API' is ENABLED in Google Cloud.";
+                        errorDisplay = "Config Error: Model not found. Please try creating a new API Key in a NEW Project.";
                     }
 
                     setMessages(prev => [...prev, { id: Date.now(), sender: 'ai', text: errorDisplay, isError: true }]);
