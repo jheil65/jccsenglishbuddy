@@ -593,9 +593,9 @@
                 }
 
                 try {
-                    // UPDATED: Use gemini-1.5-flash-002 specifically to avoid version mismatch errors
+                    // SWITCHED TO STABLE V1 ENDPOINT
                     const response = await fetchWithRetry(
-                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-002:generateContent?key=${safeKey}`, 
+                        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${safeKey}`, 
                         {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
