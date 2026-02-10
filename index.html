@@ -75,6 +75,9 @@
         ];
 
         const MAX_TURNS = 20;
+        
+        // Use gemini-1.5-flash-002 as the specific stable model version
+        const MODEL_ID = "gemini-1.5-flash-002";
 
         const SYSTEM_PROMPT = (topic) => `
         You are "English Buddy", a cool, supportive English mentor for middle and high school students who speak Spanish.
@@ -165,7 +168,8 @@
         };
 
         const WelcomeView = ({ apiKey, setApiKey, setHasKey, setView }) => (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6 animate-fade-in">
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6 animate-fade-in relative">
+                <div className="absolute top-0 right-0 p-4 text-xs text-slate-300 font-mono">v5.0</div>
                 <div className="bg-blue-100 p-6 rounded-full mb-6">
                     <Globe size={64} className="text-blue-600" />
                 </div>
@@ -517,7 +521,6 @@
                     let cleanText = text.replace(/[*#_`~]/g, '') // Markdown
                                       .replace(/[()\[\]]/g, ''); // Punctuation
                     
-                    // Simple Emoji removal attempt (Unicode ranges can be finicky in some envs)
                     try {
                         cleanText = cleanText.replace(/[\u{1F600}-\u{1F6FF}]/gu, '')
                                            .replace(/[\u{1F300}-\u{1F5FF}]/gu, '')
@@ -579,10 +582,10 @@
                 try {
                     const systemContext = `SYSTEM INSTRUCTIONS:\n${SYSTEM_PROMPT(currentTopic.label)}`;
                     
-                    // REVERTING TO LEGACY GEMINI-PRO ON V1BETA 
-                    // This uses the most universally available model configuration
+                    // CRITICAL FIX: Use gemini-1.5-flash-002 on v1beta endpoint.
+                    // This specific version string resolves many "not found" alias issues.
                     const response = await fetch(
-                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${safeKey}`, 
+                        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${safeKey}`, 
                         {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -627,7 +630,7 @@
                     } else if (errString.includes('quota') || errString.includes('429')) {
                         errorDisplay = "Busy: Too many requests. Please wait a moment.";
                     } else if (errString.includes('not found')) {
-                        errorDisplay = "Config Error: Model not found. Please try creating a new API Key in a NEW Project.";
+                        errorDisplay = `Config Error: Model ${MODEL_ID} not found. Ensure 'Generative Language API' is ENABLED in Google Cloud.`;
                     }
 
                     setMessages(prev => [...prev, { id: Date.now(), sender: 'ai', text: errorDisplay, isError: true }]);
