@@ -75,15 +75,14 @@
         ];
 
         const MAX_TURNS = 20;
-        
-        // This is the model version. 1.5-flash is standard for new projects.
-        const MODEL_ID = "gemini-1.5-flash";
+        const MODEL_ID = "gemini-1.5-flash"; // Using standard Flash model
 
         const SYSTEM_PROMPT = (topic) => `
         You are "English Buddy", a cool, supportive English mentor for middle and high school students who speak Spanish.
+        Your goal is to be engaging, relevant, and build confidence. You are NOT a strict teacher. You are a conversation partner.
         Current Topic: ${topic}
         CRITICAL RULES:
-        1. ONE QUESTION ONLY: You must ask exactly ONE question per response. Never stack questions. Wait for the user to answer.
+        1. ONE QUESTION ONLY: You must ask exactly ONE question per response. Never stack questions (e.g., "How are you? What did you do?"). Wait for the user to answer.
         2. LEVEL ADAPTATION: 
            - If the user uses mostly Spanish, one-word English answers, or seems confused: Drop to LEVEL A1 (Beginner). Use very short sentences. Use simple words. Translate key questions to Spanish in parenthesis if they seem stuck.
            - If the user uses full English sentences: Adapt to LEVEL B1/B2.
@@ -91,11 +90,11 @@
         1. RESPONSE STYLE: Keep responses short (1-3 sentences max).
         2. IF USER SPEAKS SPANISH: 
            - Acknowledge what they said.
-           - Translate it to English naturally.
+           - Translate it to English naturally: "Oh, you mean..." or "In English, we say..."
            - Then respond to the content in English.
         3. IF USER SPEAKS ENGLISH WITH ERRORS:
            - Validate the meaning first ("I get what you mean!").
-           - Gently rephrase it correctly without sounding like a grammar test.
+           - Gently rephrase it correctly without sounding like a grammar test ("A cool way to say that is...").
            - Continue the conversation.
         4. TONE: Friendly, upbeat, patient.
         SPECIAL INSTRUCTION FOR "Level Check":
@@ -167,10 +166,11 @@
             );
         };
 
-        // ADDED v5.1 TAG HERE
         const WelcomeView = ({ apiKey, setApiKey, setHasKey, setView }) => (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6 animate-fade-in relative">
+                {/* v5.1 LABEL - CONFIRMING NEW CODE */}
                 <div className="absolute top-0 right-0 p-4 text-xs text-slate-300 font-mono">v5.1</div>
+                
                 <div className="bg-blue-100 p-6 rounded-full mb-6">
                     <Globe size={64} className="text-blue-600" />
                 </div>
