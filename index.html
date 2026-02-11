@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>English Buddy (Diagnostic)</title>
+    <title>English Buddy</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React & ReactDOM -->
@@ -60,6 +60,7 @@
         const Gamepad = (p) => <IconBase {...p}><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></IconBase>;
         const Star = (p) => <IconBase {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></IconBase>;
         const CheckCircle = (p) => <IconBase {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconBase>;
+        const Settings = (p) => <IconBase {...p}><path d="M12.22 2h-.44a2 2 0 0 1-2 2 2 2 0 0 0-2 2 2 2 0 0 1-2 2H5a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h.78a2 2 0 0 1 2 2 2 2 0 0 0 2 2 2 2 0 0 1 2 2v.44a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-.44a2 2 0 0 1 2-2 2 2 0 0 0 2-2 2 2 0 0 1 2-2h.78a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2h-.78a2 2 0 0 1-2-2 2 2 0 0 0-2-2 2 2 0 0 1-2-2v-.44a2 2 0 0 0-2-2h-2z"/><circle cx="12" cy="12" r="3"/></IconBase>;
 
         // --- CONFIGURATION ---
         const TOPICS = [
@@ -76,7 +77,7 @@
 
         const MAX_TURNS = 20;
 
-        // SYSTEM PROMPT EMBEDDED IN TEXT TO AVOID JSON ERRORS
+        // EMBEDDED SYSTEM PROMPT (No separate field, maximum compatibility)
         const SYSTEM_PROMPT = (topic) => `
         You are "English Buddy", a cool, supportive English mentor for middle and high school students who speak Spanish.
         Current Topic: ${topic}
@@ -165,12 +166,12 @@
             );
         };
 
-        const WelcomeView = ({ apiKey, setApiKey, setHasKey, setView, autoModel, setAutoModel, runDiagnostics, diagStatus, diagResults }) => {
+        const WelcomeView = ({ apiKey, setApiKey, setHasKey, setView, selectedModel, setSelectedModel, testConnection, testStatus }) => {
             const lastFour = apiKey.length > 4 ? apiKey.slice(-4) : "None";
             
             return (
                 <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6 animate-fade-in relative">
-                    <div className="absolute top-0 right-0 p-4 text-xs text-slate-300 font-mono">v200.0 (Diagnostic)</div>
+                    <div className="absolute top-0 right-0 p-4 text-xs text-slate-300 font-mono">v102.0 (Voice Fix)</div>
                     <div className="bg-blue-100 p-6 rounded-full mb-6">
                         <Globe size={64} className="text-blue-600" />
                     </div>
@@ -190,12 +191,27 @@
                         className="w-full p-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                         />
                         
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Select AI Model (If one fails, try another)
+                        </label>
+                        <select 
+                            value={selectedModel}
+                            onChange={(e) => setSelectedModel(e.target.value)}
+                            className="w-full p-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 bg-slate-50"
+                        >
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Standard)</option>
+                            <option value="gemini-1.5-flash-001">Gemini 1.5 Flash (001)</option>
+                            <option value="gemini-1.5-flash-002">Gemini 1.5 Flash (002)</option>
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                            <option value="gemini-pro">Gemini 1.0 Pro (Legacy)</option>
+                        </select>
+
                         <div className="flex gap-2 mb-4">
                              <button 
-                                onClick={runDiagnostics}
-                                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors border border-slate-300"
+                                onClick={testConnection}
+                                className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 rounded-xl transition-colors"
                             >
-                                Run Diagnostics
+                                Test Key
                             </button>
                             <button 
                                 onClick={() => {
@@ -206,23 +222,15 @@
                                         alert("Please enter a valid API key.");
                                     }
                                 }}
-                                disabled={!autoModel}
-                                className={`flex-1 font-bold py-3 rounded-xl transition-colors shadow-lg ${autoModel ? "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200" : "bg-slate-300 text-slate-500 cursor-not-allowed"}`}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors shadow-blue-200 shadow-lg"
                             >
                                 Start
                             </button>
                         </div>
                         
-                        {diagStatus && (
-                            <div className={`text-xs text-center font-bold p-2 rounded mb-2 ${diagStatus.includes("Success") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                                {diagStatus}
-                            </div>
-                        )}
-                        
-                         {diagResults && (
-                            <div className="text-xs bg-slate-900 text-green-400 p-3 rounded font-mono overflow-x-auto mb-4 break-words">
-                                <strong>Detected Models:</strong><br/>
-                                {diagResults}
+                        {testStatus && (
+                            <div className={`text-xs text-center font-bold p-2 rounded ${testStatus.includes("Success") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                                {testStatus}
                             </div>
                         )}
                         
@@ -270,22 +278,37 @@
         const ChatView = ({ 
             turnCount, MAX_TURNS, currentTopic, messages, isLoading, statusMessage, 
             isListening, listeningLang, startListening, inputText, setInputText, 
-            handleSendMessage, setView, autoModel
+            handleSendMessage, setView, currentModel, setModel
         }) => {
             const isSessionDone = turnCount >= MAX_TURNS;
+            
+            // Scroll to bottom when messages update
             const chatEndRef = useRef(null);
-            useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+            useEffect(() => {
+                chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [messages]);
 
             return (
                 <div className="flex flex-col h-screen max-h-screen bg-slate-50 relative">
-                     <div className="absolute top-2 right-2 z-50 text-xs bg-white px-2 py-1 border rounded opacity-50">
-                        Model: {autoModel || "Unknown"}
+                     {/* MASTER CONTROL MODEL SWITCHER */}
+                     <div className="absolute top-2 right-2 z-50">
+                        <select 
+                            value={currentModel} 
+                            onChange={(e) => setModel(e.target.value)}
+                            className="bg-white border border-slate-300 text-slate-600 text-xs rounded px-2 py-1 shadow-sm opacity-50 hover:opacity-100 transition-opacity"
+                        >
+                            <option value="gemini-1.5-flash">v102.0 - Flash</option>
+                            <option value="gemini-1.0-pro">v102.0 - Pro (Backup)</option>
+                        </select>
                     </div>
 
                     <div className="bg-white border-b border-slate-200 p-4 flex items-center justify-between shadow-sm z-10">
                         <div className="flex items-center gap-3">
                         <button 
-                            onClick={() => { window.speechSynthesis.cancel(); setView('topics'); }}
+                            onClick={() => {
+                            window.speechSynthesis.cancel();
+                            setView('topics');
+                            }}
                             className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"
                         >
                             <ArrowLeft size={24} />
@@ -305,7 +328,10 @@
                         <div className="flex flex-col items-end mr-8">
                             <div className="text-xs font-bold text-slate-400 mb-1">Turn {Math.min(turnCount, MAX_TURNS)}/{MAX_TURNS}</div>
                             <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-blue-500 transition-all duration-500" style={{ width: `${Math.min((turnCount / MAX_TURNS) * 100, 100)}%` }}></div>
+                                <div 
+                                    className="h-full bg-blue-500 transition-all duration-500" 
+                                    style={{ width: `${Math.min((turnCount / MAX_TURNS) * 100, 100)}%` }}
+                                ></div>
                             </div>
                         </div>
                     </div>
@@ -328,32 +354,86 @@
 
                     <div className="bg-white border-t border-slate-200 p-4 pb-6">
                         <div className="max-w-3xl mx-auto space-y-4">
+                        
                         {isSessionDone ? (
                             <div className="text-center py-4">
                                 <h3 className="text-xl font-bold text-slate-800 mb-2">Great Job! 🎉</h3>
                                 <p className="text-slate-500 mb-4">You have completed this conversation.</p>
-                                <button onClick={() => { window.speechSynthesis.cancel(); setView('topics'); }} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-all transform hover:scale-105">Start New Topic</button>
+                                <button
+                                    onClick={() => {
+                                        window.speechSynthesis.cancel();
+                                        setView('topics');
+                                    }}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-all transform hover:scale-105"
+                                >
+                                    Start New Topic
+                                </button>
                             </div>
                         ) : (
                             <>
                             <div className="h-6 flex items-center justify-center">
                                 {statusMessage && (
-                                <p className={`text-xs font-semibold ${statusMessage.includes('Error') || statusMessage.includes('No speech') ? 'text-red-500' : 'text-blue-600 animate-pulse'}`}>{statusMessage}</p>
+                                <p className={`text-xs font-semibold ${statusMessage.includes('Error') || statusMessage.includes('No speech') ? 'text-red-500' : 'text-blue-600 animate-pulse'}`}>
+                                    {statusMessage}
+                                </p>
                                 )}
                             </div>
+
                             <div className="flex gap-2 justify-center mb-2">
-                                <button onClick={() => startListening('en-US')} disabled={isListening || isLoading} className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${isListening && listeningLang === 'en-US' ? 'border-red-500 bg-red-50 text-red-600 animate-pulse' : 'border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-200'}`}>
-                                <Mic size={24} className="mb-1" /><span className="text-xs font-bold">Speak English</span>
+                                <button
+                                onClick={() => startListening('en-US')}
+                                disabled={isListening || isLoading}
+                                className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all
+                                    ${isListening && listeningLang === 'en-US' 
+                                    ? 'border-red-500 bg-red-50 text-red-600 animate-pulse' 
+                                    : 'border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-200'
+                                    }
+                                `}
+                                >
+                                <Mic size={24} className="mb-1" />
+                                <span className="text-xs font-bold">Speak English</span>
                                 </button>
-                                <button onClick={() => startListening('es-MX')} disabled={isListening || isLoading} className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${isListening && listeningLang === 'es-MX' ? 'border-red-500 bg-red-50 text-red-600 animate-pulse' : 'border-orange-100 bg-orange-50 text-orange-700 hover:bg-orange-100 hover:border-orange-200'}`}>
-                                <Globe size={24} className="mb-1" /><span className="text-xs font-bold">Ayuda en Español</span>
+
+                                <button
+                                onClick={() => startListening('es-MX')}
+                                disabled={isListening || isLoading}
+                                className={`flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all
+                                    ${isListening && listeningLang === 'es-MX'
+                                    ? 'border-red-500 bg-red-50 text-red-600 animate-pulse' 
+                                    : 'border-orange-100 bg-orange-50 text-orange-700 hover:bg-orange-100 hover:border-orange-200'
+                                    }
+                                `}
+                                >
+                                <Globe size={24} className="mb-1" />
+                                <span className="text-xs font-bold">Ayuda en Español</span>
                                 </button>
                             </div>
-                            <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(inputText); }} className="flex gap-2">
-                                <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="Or type your message here..." className="flex-1 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" disabled={isLoading} autoFocus />
-                                <button type="submit" disabled={!inputText.trim() || isLoading} className="bg-slate-800 text-white p-3 rounded-xl hover:bg-slate-700 disabled:opacity-50 transition-colors"><Send size={20} /></button>
+
+                            <form 
+                                onSubmit={(e) => { e.preventDefault(); handleSendMessage(inputText); }}
+                                className="flex gap-2"
+                            >
+                                <input
+                                type="text"
+                                value={inputText}
+                                onChange={(e) => setInputText(e.target.value)}
+                                placeholder="Or type your message here..."
+                                className="flex-1 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                                disabled={isLoading}
+                                autoFocus
+                                />
+                                <button 
+                                type="submit"
+                                disabled={!inputText.trim() || isLoading}
+                                className="bg-slate-800 text-white p-3 rounded-xl hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                                >
+                                <Send size={20} />
+                                </button>
                             </form>
-                            <p className="text-center text-xs text-slate-400">Click "Ayuda en Español" if you get stuck and need to speak Spanish.</p>
+                            
+                            <p className="text-center text-xs text-slate-400">
+                                Click "Ayuda en Español" if you get stuck and need to speak Spanish.
+                            </p>
                             </>
                         )}
                         </div>
@@ -377,14 +457,14 @@
             const [statusMessage, setStatusMessage] = useState('');
             const [turnCount, setTurnCount] = useState(0);
             
-            // DIAGNOSTICS STATE
-            const [autoModel, setAutoModel] = useState("");
-            const [diagStatus, setDiagStatus] = useState("");
-            const [diagResults, setDiagResults] = useState("");
+            // UI-Based Model Selection
+            const [selectedModel, setSelectedModel] = useState("gemini-1.5-flash");
+            const [testStatus, setTestStatus] = useState("");
 
             const recognitionRef = useRef(null);
             const handleSendMessageRef = useRef(null);
 
+            // CHECK URL FOR MAGIC KEY
             useEffect(() => {
                 const searchParams = new URLSearchParams(window.location.search);
                 const magicKey = searchParams.get('key');
@@ -393,93 +473,167 @@
                 }
             }, []);
 
-            // DIAGNOSTIC FUNCTION
-            const runDiagnostics = async () => {
-                setDiagStatus("Checking models...");
-                setDiagResults("...");
+            // TEST CONNECTION FUNCTION
+            const testConnection = async () => {
+                setTestStatus("Testing...");
                 try {
-                    // Call the API to list models
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-                    
-                    if (!response.ok) {
-                         const errorText = await response.text();
-                         setDiagStatus("Error: Failed to fetch models.");
-                         setDiagResults(`API Error ${response.status}: ${errorText}`);
-                         return;
-                    }
-
-                    const data = await response.json();
-                    
-                    if (!data.models || data.models.length === 0) {
-                        setDiagStatus("Error: No models available.");
-                        setDiagResults("Your API Key works, but the Project has no models enabled. Is the API turned on?");
-                        return;
-                    }
-
-                    // Filter for Gemini models
-                    const geminiModels = data.models
-                        .filter(m => m.name.includes("gemini"))
-                        .map(m => m.name.replace("models/", "")); // Strip 'models/' prefix
-
-                    if (geminiModels.length > 0) {
-                        // Priority Selection: Flash > Pro > Anything
-                        let bestModel = geminiModels.find(m => m.includes("1.5-flash")) || 
-                                        geminiModels.find(m => m.includes("1.0-pro")) ||
-                                        geminiModels[0];
-                        
-                        setAutoModel(bestModel);
-                        setDiagStatus(`Success! Ready.`);
-                        setDiagResults(geminiModels.join(", "));
+                    const response = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, 
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: "Hello" }] }]
+                            })
+                        }
+                    );
+                    if (response.ok) {
+                        setTestStatus("Success! Key & Model Working. ✅");
                     } else {
-                        setDiagStatus("Error: No Gemini models found.");
-                        setDiagResults(data.models.map(m => m.name).join(", "));
+                        const data = await response.json();
+                        setTestStatus(`Failed: ${data.error?.message || response.status}`);
                     }
-
                 } catch (e) {
-                    setDiagStatus("Network Error");
-                    setDiagResults(e.message);
+                    setTestStatus(`Error: ${e.message}`);
                 }
             };
 
             useEffect(() => {
                 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                
                 recognitionRef.current = new SpeechRecognition();
                 recognitionRef.current.continuous = false;
                 recognitionRef.current.interimResults = false;
-                recognitionRef.current.onstart = () => { setIsListening(true); setStatusMessage("Listening..."); };
+
+                recognitionRef.current.onstart = () => {
+                    setIsListening(true);
+                    setStatusMessage("Listening...");
+                };
+
                 recognitionRef.current.onresult = (event) => {
                     if (event.results && event.results[0]) {
                         const transcript = event.results[0][0].transcript;
                         setInputText(transcript);
                         setStatusMessage("Processing...");
                         const isSpanish = recognitionRef.current.lang === 'es-MX';
-                        if (handleSendMessageRef.current) handleSendMessageRef.current(transcript, isSpanish);
+                        
+                        if (handleSendMessageRef.current) {
+                            handleSendMessageRef.current(transcript, isSpanish);
+                        }
                     }
                 };
-                recognitionRef.current.onend = () => { setIsListening(false); };
-                recognitionRef.current.onerror = (event) => { setIsListening(false); setStatusMessage("Click to try again."); };
+
+                recognitionRef.current.onend = () => {
+                    setIsListening(false);
+                };
+
+                recognitionRef.current.onerror = (event) => {
+                    if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                        console.error("Speech recognition error", event.error);
+                    }
+                    setIsListening(false);
+                    if (event.error === 'no-speech') {
+                        setStatusMessage("No speech detected. Click to try again.");
+                    } else if (event.error === 'not-allowed') {
+                        setStatusMessage("Microphone access denied. Please allow permissions.");
+                    } else if (event.error === 'aborted') {
+                        setStatusMessage(""); 
+                    } else {
+                        setStatusMessage(`Microphone Error: ${event.error}`);
+                    }
+                    setTimeout(() => {
+                        setStatusMessage((prev) => prev.includes('Error') || prev.includes('No speech') || prev.includes('Microphone') ? '' : prev);
+                    }, 3000);
+                };
                 }
-                return () => { if (recognitionRef.current) recognitionRef.current.abort(); };
+                return () => {
+                    if (recognitionRef.current) {
+                        recognitionRef.current.abort();
+                    }
+                };
             }, []); 
 
             const startListening = (lang) => {
-                if (!recognitionRef.current) { alert("Use Chrome browser."); return; }
-                if (isListening) { recognitionRef.current.stop(); return; }
+                if (!recognitionRef.current) {
+                    alert("Your browser doesn't support speech recognition. Try Chrome or Edge.");
+                    return;
+                }
+                if (isListening) {
+                    recognitionRef.current.stop();
+                    return; 
+                }
                 setListeningLang(lang);
                 recognitionRef.current.lang = lang;
-                try { recognitionRef.current.start(); } catch (err) { recognitionRef.current.stop(); }
+                try {
+                    recognitionRef.current.start();
+                } catch (err) {
+                    console.log("Recognition restart required, resetting...");
+                    recognitionRef.current.stop();
+                }
+            };
+
+            const detectLanguage = (text) => {
+                if (text.includes('¿') || text.includes('¡')) return 'es-MX';
+                const spanishWords = new Set(['el', 'la', 'los', 'las', 'un', 'una', 'y', 'o', 'pero', 'si', 'sí', 'no', 'que', 'qué', 'quien', 'donde', 'como', 'por', 'para', 'con', 'sin', 'de', 'del', 'al', 'a', 'en', 'su', 'mi', 'tu', 'yo', 'él', 'ella', 'usted', 'es', 'son', 'soy', 'estoy', 'tengo', 'hacer', 'decir', 'gracias', 'hola', 'adiós', 'bueno', 'bien', 'gusta', 'quiero', 'entiendo']);
+                const englishWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'if', 'not', 'is', 'are', 'am', 'was', 'have', 'do', 'will', 'can', 'i', 'you', 'he', 'she', 'we', 'they', 'my', 'your', 'that', 'this', 'what', 'where', 'when', 'in', 'on', 'at', 'to', 'from', 'with', 'for', 'say', 'tell', 'ask', 'please', 'thank', 'hello', 'good', 'understand', 'well', 'very', 'like', 'want']);
+                const words = text.toLowerCase().replace(/[.,?!:;"'(){}\[\]]/g, '').split(/\s+/);
+                let esCount = 0;
+                let enCount = 0;
+                words.forEach(word => {
+                    if (spanishWords.has(word)) esCount++;
+                    if (englishWords.has(word)) enCount++;
+                });
+                return (esCount > enCount) ? 'es-MX' : 'en-US';
             };
 
             const speakText = (text) => {
                 if ('speechSynthesis' in window) {
                     window.speechSynthesis.cancel(); 
-                    let cleanText = text.replace(/[*#_`~]/g, '').replace(/[()\[\]]/g, '');
+                    
+                    // Wait for voices to load if they haven't (Chrome quirk handling usually involves onvoiceschanged, but inside the function we assume they are loaded or we get what we get).
                     const voices = window.speechSynthesis.getVoices();
-                    const enVoice = voices.find(v => v.lang.includes('en-US')) || voices[0];
-                    const utterance = new SpeechSynthesisUtterance(cleanText);
-                    utterance.voice = enVoice;
-                    window.speechSynthesis.speak(utterance);
+                    
+                    // Better cleaning
+                    let cleanText = text.replace(/[*#_`~]/g, '').replace(/[()\[\]]/g, '');
+
+                    // Split into sentences to handle mixed language better
+                    // Using a simpler split might be safer to ensure we don't lose chunks
+                    const sentences = cleanText.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleanText];
+
+                    sentences.forEach(sentence => {
+                        const lang = detectLanguage(sentence);
+                        const utterance = new SpeechSynthesisUtterance(sentence);
+                        
+                        // Voice Selection Logic
+                        let selectedVoice = null;
+                        
+                        if (lang === 'es-MX') {
+                            // Try specific high quality Spanish voices
+                            selectedVoice = voices.find(v => v.name.includes('Google') && v.lang.includes('es')) || 
+                                            voices.find(v => v.name.includes('Monica') && v.lang.includes('es')) || // Mac
+                                            voices.find(v => v.name.includes('Paulina') && v.lang.includes('es')) || // Mac
+                                            voices.find(v => v.name.includes('Microsoft') && v.lang.includes('es')) || // Windows
+                                            voices.find(v => v.lang.includes('es')); // Fallback
+                        } else {
+                            // Try specific high quality English voices
+                            selectedVoice = voices.find(v => v.name.includes('Google US English')) || 
+                                            voices.find(v => v.name.includes('Samantha')) || // Mac
+                                            voices.find(v => v.name.includes('Microsoft Zira')) || // Windows
+                                            voices.find(v => v.lang.includes('en-US')); // Fallback
+                        }
+
+                        if (selectedVoice) {
+                            utterance.voice = selectedVoice;
+                            utterance.lang = selectedVoice.lang; // Important to set the lang to match the voice
+                        }
+                        
+                        // Adjust rate slightly for clarity
+                        utterance.rate = 0.9; 
+                        utterance.pitch = 1;
+
+                        window.speechSynthesis.speak(utterance);
+                    });
                 }
             };
 
@@ -503,7 +657,7 @@
                     
                     // USE THE DETECTED MODEL
                     const response = await fetch(
-                        `https://generativelanguage.googleapis.com/v1beta/models/${autoModel}:generateContent?key=${apiKey}`, 
+                        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, 
                         {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -540,9 +694,9 @@
 
             return (
                 <div className="font-sans text-slate-900 bg-slate-50 min-h-screen">
-                    {view === 'welcome' && <WelcomeView apiKey={apiKey} setApiKey={setApiKey} setHasKey={setHasKey} setView={setView} autoModel={autoModel} setAutoModel={setAutoModel} runDiagnostics={runDiagnostics} diagStatus={diagStatus} diagResults={diagResults} />}
+                    {view === 'welcome' && <WelcomeView apiKey={apiKey} setApiKey={setApiKey} setHasKey={setHasKey} setView={setView} selectedModel={selectedModel} setSelectedModel={setSelectedModel} testConnection={testConnection} testStatus={testStatus} />}
                     {view === 'topics' && <TopicsView setView={setView} setHasKey={setHasKey} setCurrentTopic={setCurrentTopic} setMessages={setMessages} speakText={speakText} setTurnCount={setTurnCount} />}
-                    {view === 'chat' && <ChatView turnCount={turnCount} MAX_TURNS={MAX_TURNS} currentTopic={currentTopic} messages={messages} isLoading={isLoading} statusMessage={statusMessage} isListening={isListening} listeningLang={listeningLang} startListening={startListening} inputText={inputText} setInputText={setInputText} handleSendMessage={handleSendMessage} setView={setView} autoModel={autoModel} />}
+                    {view === 'chat' && <ChatView turnCount={turnCount} MAX_TURNS={MAX_TURNS} currentTopic={currentTopic} messages={messages} isLoading={isLoading} statusMessage={statusMessage} isListening={isListening} listeningLang={listeningLang} startListening={startListening} inputText={inputText} setInputText={setInputText} handleSendMessage={handleSendMessage} setView={setView} currentModel={selectedModel} setModel={setSelectedModel} />}
                 </div>
             );
         }
