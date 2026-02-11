@@ -60,6 +60,7 @@
         const Gamepad = (p) => <IconBase {...p}><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></IconBase>;
         const Star = (p) => <IconBase {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></IconBase>;
         const CheckCircle = (p) => <IconBase {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconBase>;
+        const Settings = (p) => <IconBase {...p}><path d="M12.22 2h-.44a2 2 0 0 1-2 2 2 2 0 0 0-2 2 2 2 0 0 1-2 2H5a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h.78a2 2 0 0 1 2 2 2 2 0 0 0 2 2 2 2 0 0 1 2 2v.44a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-.44a2 2 0 0 1 2-2 2 2 0 0 0 2-2 2 2 0 0 1 2-2h.78a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2h-.78a2 2 0 0 1-2-2 2 2 0 0 0-2-2 2 2 0 0 1-2-2v-.44a2 2 0 0 0-2-2h-2z"/><circle cx="12" cy="12" r="3"/></IconBase>;
 
         // --- CONFIGURATION ---
         const TOPICS = [
@@ -76,10 +77,6 @@
 
         const MAX_TURNS = 20;
 
-        // V10: Use the 'latest' alias which is often more robust for new keys
-        const MODEL_ID = "gemini-1.5-flash-latest";
-
-        // EMBEDDED SYSTEM PROMPT (No separate field, maximum compatibility)
         const SYSTEM_PROMPT = (topic) => `
         You are "English Buddy", a cool, supportive English mentor for middle and high school students who speak Spanish.
         Current Topic: ${topic}
@@ -168,22 +165,21 @@
             );
         };
 
-        const WelcomeView = ({ apiKey, setApiKey, setHasKey, setView }) => {
-            // Visual check for the last 4 digits
+        const WelcomeView = ({ apiKey, setApiKey, setHasKey, setView, selectedModel, setSelectedModel, testConnection, testStatus }) => {
             const lastFour = apiKey.length > 4 ? apiKey.slice(-4) : "None";
             
             return (
                 <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6 animate-fade-in relative">
-                    <div className="absolute top-0 right-0 p-4 text-xs text-slate-300 font-mono">v10.0</div>
+                    <div className="absolute top-0 right-0 p-4 text-xs text-slate-300 font-mono">v11.0 (Universal)</div>
                     <div className="bg-blue-100 p-6 rounded-full mb-6">
                         <Globe size={64} className="text-blue-600" />
                     </div>
                     <h1 className="text-4xl font-bold text-slate-800 mb-4 tracking-tight">English Buddy</h1>
                     <p className="text-lg text-slate-600 max-w-md mb-8">
-                        Your supportive companion for learning English. Talk freely, take risks, and improve your conversation skills.
+                        Your supportive companion for learning English.
                     </p>
-                    <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 w-full max-w-md">
-                        <label className="block text-sm font-semibold text-slate-700 mb-2 text-left">
+                    <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 w-full max-w-md text-left">
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
                         Enter Google Gemini API Key
                         </label>
                         <input 
@@ -191,29 +187,55 @@
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
                         placeholder="Paste key here..."
-                        className="w-full p-3 border border-slate-300 rounded-lg mb-2 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                        className="w-full p-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                         />
-                        {/* KEY VERIFICATION DISPLAY */}
-                        <div className="text-xs text-right text-slate-400 mb-4 font-mono">
-                            Key loaded: ...{lastFour}
-                        </div>
-
-                        <button 
-                        onClick={() => {
-                            if(apiKey.length > 10) {
-                            setHasKey(true);
-                            setView('topics');
-                            } else {
-                            alert("Please enter a valid API key.");
-                            }
-                        }}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-blue-200 shadow-lg"
+                        
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Select AI Model (If one fails, try another)
+                        </label>
+                        <select 
+                            value={selectedModel}
+                            onChange={(e) => setSelectedModel(e.target.value)}
+                            className="w-full p-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 bg-slate-50"
                         >
-                        Start Learning
-                        </button>
-                        <p className="text-xs text-slate-400 mt-4">
-                        Need a key? Get one for free at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">Google AI Studio</a>.
-                        </p>
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Standard)</option>
+                            <option value="gemini-1.5-flash-001">Gemini 1.5 Flash (001)</option>
+                            <option value="gemini-1.5-flash-002">Gemini 1.5 Flash (002)</option>
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                            <option value="gemini-pro">Gemini 1.0 Pro (Legacy)</option>
+                        </select>
+
+                        <div className="flex gap-2 mb-4">
+                             <button 
+                                onClick={testConnection}
+                                className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 rounded-xl transition-colors"
+                            >
+                                Test Key
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    if(apiKey.length > 10) {
+                                        setHasKey(true);
+                                        setView('topics');
+                                    } else {
+                                        alert("Please enter a valid API key.");
+                                    }
+                                }}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors shadow-blue-200 shadow-lg"
+                            >
+                                Start
+                            </button>
+                        </div>
+                        
+                        {testStatus && (
+                            <div className={`text-xs text-center font-bold p-2 rounded ${testStatus.includes("Success") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                                {testStatus}
+                            </div>
+                        )}
+                        
+                        <div className="text-xs text-right text-slate-400 mt-2 font-mono">
+                            Loaded Key: ...{lastFour}
+                        </div>
                     </div>
                 </div>
             );
@@ -421,6 +443,10 @@
             const [listeningLang, setListeningLang] = useState('en-US');
             const [statusMessage, setStatusMessage] = useState('');
             const [turnCount, setTurnCount] = useState(0);
+            
+            // UI-Based Model Selection
+            const [selectedModel, setSelectedModel] = useState("gemini-1.5-flash");
+            const [testStatus, setTestStatus] = useState("");
 
             const recognitionRef = useRef(null);
             const handleSendMessageRef = useRef(null);
@@ -431,10 +457,33 @@
                 const magicKey = searchParams.get('key');
                 if (magicKey) {
                     setApiKey(magicKey);
-                    setHasKey(true);
-                    setView('topics');
                 }
             }, []);
+
+            // TEST CONNECTION FUNCTION
+            const testConnection = async () => {
+                setTestStatus("Testing...");
+                try {
+                    const response = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, 
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: "Hello" }] }]
+                            })
+                        }
+                    );
+                    if (response.ok) {
+                        setTestStatus("Success! Key & Model Working. ✅");
+                    } else {
+                        const data = await response.json();
+                        setTestStatus(`Failed: ${data.error?.message || response.status}`);
+                    }
+                } catch (e) {
+                    setTestStatus(`Error: ${e.message}`);
+                }
+            };
 
             useEffect(() => {
                 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -593,10 +642,9 @@
                 try {
                     const systemContext = `SYSTEM INSTRUCTIONS:\n${SYSTEM_PROMPT(currentTopic.label)}`;
                     
-                    // STANDARD FETCH: gemini-1.5-flash-latest on v1beta.
-                    // This is the most robust endpoint for new keys.
+                    // FETCH USING v1beta AND USER-SELECTED MODEL
                     const response = await fetch(
-                        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${safeKey}`, 
+                        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${safeKey}`, 
                         {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -641,7 +689,7 @@
                     } else if (errString.includes('quota') || errString.includes('429')) {
                         errorDisplay = "Busy: Too many requests. Please wait a moment.";
                     } else if (errString.includes('not found')) {
-                        errorDisplay = `Config Error: Model ${MODEL_ID} not found. Ensure 'Generative Language API' is ENABLED in Google Cloud.`;
+                        errorDisplay = `Config Error: Model ${selectedModel} not found. Try switching models using the drop-down menu on the login page.`;
                     }
 
                     setMessages(prev => [...prev, { id: Date.now(), sender: 'ai', text: errorDisplay, isError: true }]);
@@ -654,7 +702,7 @@
 
             return (
                 <div className="font-sans text-slate-900 bg-slate-50 min-h-screen">
-                    {view === 'welcome' && <WelcomeView apiKey={apiKey} setApiKey={setApiKey} setHasKey={setHasKey} setView={setView} />}
+                    {view === 'welcome' && <WelcomeView apiKey={apiKey} setApiKey={setApiKey} setHasKey={setHasKey} setView={setView} selectedModel={selectedModel} setSelectedModel={setSelectedModel} testConnection={testConnection} testStatus={testStatus} />}
                     {view === 'topics' && <TopicsView setView={setView} setHasKey={setHasKey} setCurrentTopic={setCurrentTopic} setMessages={setMessages} speakText={speakText} setTurnCount={setTurnCount} />}
                     {view === 'chat' && <ChatView 
                         turnCount={turnCount} 
