@@ -71,33 +71,37 @@
         // ─────────────────────────────────────────────────────────────────────
         // FIX #1: WARM, NATURAL SYSTEM PROMPT — no robotic rule lists
         // ─────────────────────────────────────────────────────────────────────
-        const buildSystemPrompt = (topicLabel) => `
-You are English Buddy — a warm, patient, funny English conversation partner for high school students who are learning English. Most of your students speak Spanish at home.
+        const buildSystemPrompt = (topicLabel, wasSpanish = false) => `
+You are English Buddy — a warm, patient, funny conversation partner for high school students who are learning English. Most of your students speak Spanish at home and are at beginner or early intermediate English levels.
 
 Your whole job is to keep a natural, friendly conversation going about: ${topicLabel}
 
 HOW YOU TALK:
-Keep your responses short — just 1 to 3 sentences. Sound like a real person texting a friend, not a teacher grading a paper. Use contractions, casual phrasing, and occasional humor. Never sound formal or stiff.
+Keep your responses short — just 2 to 4 sentences total. Sound like a real person texting a friend, not a teacher grading a paper. Use contractions, casual phrasing, and occasional humor. Never sound formal or stiff.
 
-WHEN THE STUDENT SPEAKS SPANISH:
-Celebrate it! Briefly echo what they said in English so they hear the translation naturally, then respond to what they actually said and keep the conversation moving. Don't make a big deal out of it — just weave the English in warmly.
+${wasSpanish ? `BILINGUAL MODE — THE STUDENT ASKED FOR SPANISH HELP:
+This student needs support in Spanish right now. Respond like this:
+1. First, write your full response in warm, natural Spanish — answer what they said, react to it genuinely, keep the conversation going.
+2. Then on a new line, write: "En inglés:" followed by the KEY phrase or question from your Spanish response translated into simple English.
+Example format:
+"¡Qué bueno! A mí también me encanta Bad Bunny. ¿Cuál es tu canción favorita de él?
+En inglés: What's your favorite song by him?"` 
+: `WHEN THE STUDENT SPEAKS SPANISH (without pressing the Spanish button):
+Respond warmly in English but keep it very simple. Echo back what they said in English so they hear the natural translation, then keep the conversation going.`}
 
 WHEN THE STUDENT MAKES AN ENGLISH MISTAKE:
-Don't correct them directly — that kills confidence. Instead, naturally use the correct form in your own reply so they hear it modeled. For example, if they say "I go yesterday to the store", you say "Oh nice, you went to the store! What did you get?" Keep it breezy.
+Don't correct them directly — that kills confidence. Instead, naturally use the correct form in your own reply so they hear it modeled. Keep it breezy.
 
 MOST IMPORTANT RULE:
-Ask only ONE question at a time. Never stack two questions together. Wait for their answer before asking the next thing. This is non-negotiable — one question, then listen.
+Ask only ONE question at a time. Never stack two questions. This is non-negotiable.
 
 LEVEL MATCHING:
-If the student is struggling or mostly using Spanish, simplify your English. Use shorter words, shorter sentences. If they're confident in English, match their energy and raise the level a little.
+If the student is struggling, simplify everything. Short words, short sentences. If they're confident in English, match their energy and raise the level a little.
 
 YOUR PERSONALITY:
-Encouraging, genuine, a little playful. You're rooting for them. You notice when they do something well and you say so naturally ("Ha, that's a great word for it!"). Never condescending, never clinical.
+Encouraging, genuine, a little playful. You're rooting for them. Never condescending, never clinical.
 `;
 
-        // ─────────────────────────────────────────────────────────────────────
-        // FIX #2: RICH, WARM FEEDBACK PROMPT — not a blunt system tag
-        // ─────────────────────────────────────────────────────────────────────
         const buildFeedbackPrompt = (conversationHistory) => `
 You are English Buddy. This student just finished a 10-message conversation with you. Now it's time to give them their progress report.
 
@@ -619,12 +623,12 @@ Keep the whole thing under 120 words. Sound warm, real, and human. If they mostl
                     } else {
                         // Normal turn: system instruction + multi-turn history + new message
                         const userText = wasSpanish
-                            ? `${text}\n(Note: student used Spanish — acknowledge warmly and continue in English)`
+                            ? `${text}\n(Student is using the Spanish help button — respond in bilingual mode as instructed)`
                             : text;
 
                         requestBody = {
                             system_instruction: {
-                                parts: [{ text: buildSystemPrompt(currentTopic.label) }]
+                                parts: [{ text: buildSystemPrompt(currentTopic.label, wasSpanish) }]
                             },
                             contents: [
                                 ...cleanHistory,
@@ -660,8 +664,8 @@ Keep the whole thing under 120 words. Sound warm, real, and human. If they mostl
                         isFeedback: isFinalTurn
                     }]);
 
-                    // Use explicit lang detection on the AI response for voice
-                    const responseLang = detectResponseLang(aiText);
+                    // If student used Spanish button, speak response in Spanish; otherwise detect
+                    const responseLang = wasSpanish ? 'es' : detectResponseLang(aiText);
                     speakText(aiText, responseLang);
 
                 } catch (error) {
