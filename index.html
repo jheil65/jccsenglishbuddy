@@ -590,19 +590,48 @@ Keep the whole thing under 120 words. Sound warm, real, and human. If they mostl
                 const isFinalTurn = newTurnCount >= MAX_TURNS;
 
                 try {
-                    let promptText;
+                    // Build a clean history of only text messages (no error/feedback metadata)
+                    const cleanHistory = messages
+                        .filter(m => m.text && typeof m.text === 'string' && !m.isError)
+                        .map(m => ({
+                            role: m.sender === 'user' ? 'user' : 'model',
+                            parts: [{ text: String(m.text) }]
+                        }));
+
+                    let requestBody;
 
                     if (isFinalTurn) {
-                        // FIX #2: Use the warm feedback prompt, not a tacked-on system tag
+                        // Feedback turn: single prompt with full conversation summary
                         const convoHistory = messages
+                            .filter(m => m.text && typeof m.text === 'string' && !m.isError)
                             .concat([{ sender: 'user', text }])
-                            .map(m => `${m.sender === 'user' ? 'Student' : 'English Buddy'}: ${m.text}`)
+                            .map(m => `${m.sender === 'user' ? 'Student' : 'English Buddy'}: ${String(m.text)}`)
                             .join('\n');
-                        promptText = buildFeedbackPrompt(convoHistory);
+
+                        requestBody = {
+                            contents: [{
+                                role: 'user',
+                                parts: [{ text: buildFeedbackPrompt(convoHistory) }]
+                            }]
+                        };
                     } else {
-                        const systemContext = buildSystemPrompt(currentTopic.label);
-                        const history = messages.map(m => `${m.sender === 'user' ? 'Student' : 'English Buddy'}: ${m.text}`).join('\n');
-                        promptText = `${systemContext}\n\nConversation so far:\n${history}\n\nStudent just said: "${text}"\n${wasSpanish ? '(Student used Spanish — acknowledge warmly and keep going in English)' : ''}`;
+                        // Normal turn: system instruction + multi-turn history + new message
+                        const userText = wasSpanish
+                            ? `${text}\n(Note: student used Spanish — acknowledge warmly and continue in English)`
+                            : text;
+
+                        requestBody = {
+                            system_instruction: {
+                                parts: [{ text: buildSystemPrompt(currentTopic.label) }]
+                            },
+                            contents: [
+                                ...cleanHistory,
+                                {
+                                    role: 'user',
+                                    parts: [{ text: userText }]
+                                }
+                            ]
+                        };
                     }
 
                     const response = await fetch(
@@ -610,7 +639,7 @@ Keep the whole thing under 120 words. Sound warm, real, and human. If they mostl
                         {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+                            body: JSON.stringify(requestBody)
                         }
                     );
 
